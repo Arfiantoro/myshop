@@ -1,2 +1,5 @@
 1. npm run dev
 2. php -S localhost:82 -t public/
+3. User Customer :
+   email : dokumen.fian@gmail.com
+   password :  J8BnwyAA

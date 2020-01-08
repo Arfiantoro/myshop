@@ -34,3 +34,19 @@ Route::group(['prefix' => 'administrator', 'middleware' => 'auth'], function() {
     Route::get('/product/bulk', 'ProductController@massUploadForm')->name('product.bulk'); //TAMBAHKAN ROUTE INI
     Route::post('/product/bulk', 'ProductController@massUpload')->name('product.saveBulk');
 });
+
+Route::group(['prefix' => 'member', 'namespace' => 'Ecommerce'], function() {
+    Route::get('login', 'LoginController@loginForm')->name('customer.login');
+    Route::post('login', 'LoginController@login')->name('customer.post_login');
+    Route::get('verify/{token}', 'FrontController@verifyCustomerRegistration')->name('customer.verify');
+    Route::group(['middleware' => 'customer'], function() {
+        Route::get('dashboard', 'LoginController@dashboard')->name('customer.dashboard');
+        Route::get('logout', 'LoginController@logout')->name('customer.logout');
+        Route::get('orders', 'OrderController@index')->name('customer.orders');
+        Route::get('orders/{invoice}', 'OrderController@view')->name('customer.view_order');
+        Route::get('payment', 'OrderController@paymentForm')->name('customer.paymentForm');
+        Route::post('payment', 'OrderController@storePayment')->name('customer.savePayment');
+        Route::get('setting', 'FrontController@customerSettingForm')->name('customer.settingForm');
+        Route::post('setting', 'FrontController@customerUpdateProfile')->name('customer.setting');
+    });
+});
