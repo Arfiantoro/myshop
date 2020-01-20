@@ -28,11 +28,18 @@ Auth::routes(); //ROUTING INI MENCAKUP SEMUA ROUTING YANG BERKAITAN DENGAN AUTHE
 //CONTOH: /administrator/category ATAU /administrator/product, DAN SEBAGAINYA
 Route::group(['prefix' => 'administrator', 'middleware' => 'auth'], function() {
     Route::get('/home', 'HomeController@index')->name('home'); //JADI ROUTING INI SUDAH ADA DARI ARTIKEL SEBELUMNYA TAPI KITA PINDAHKAN KEDALAM GROUPING
-    //INI ADALAH ROUTE BARU
     Route::resource('category', 'CategoryController')->except(['create', 'show']);
     Route::resource('product', 'ProductController')->except(['show']); //BAGIAN INI KITA TAMBAHKAN EXCETP KARENA METHOD SHOW TIDAK DIGUNAKAN
     Route::get('/product/bulk', 'ProductController@massUploadForm')->name('product.bulk'); //TAMBAHKAN ROUTE INI
     Route::post('/product/bulk', 'ProductController@massUpload')->name('product.saveBulk');
+    Route::group(['prefix' => 'orders'], function() {
+    Route::get('/', 'OrderController@index')->name('orders.index');
+        //SEMUA ROUTE BARU SEPANJANG ARTIKEL INI AKAN DISIMPAN DI DALAM BLOCK CODE INI
+        Route::delete('/{id}', 'OrderController@destroy')->name('orders.destroy');
+        Route::get('/{invoice}', 'OrderController@view')->name('orders.view');
+        Route::get('/payment/{invoice}', 'OrderController@acceptPayment')->name('orders.approve_payment');
+        Route::post('/shipping', 'OrderController@shippingOrder')->name('orders.shipping');
+    });
 });
 
 Route::group(['prefix' => 'member', 'namespace' => 'Ecommerce'], function() {
@@ -44,6 +51,7 @@ Route::group(['prefix' => 'member', 'namespace' => 'Ecommerce'], function() {
         Route::get('logout', 'LoginController@logout')->name('customer.logout');
         Route::get('orders', 'OrderController@index')->name('customer.orders');
         Route::get('orders/{invoice}', 'OrderController@view')->name('customer.view_order');
+        Route::get('orders/pdf/{invoice}', 'OrderController@pdf')->name('customer.order_pdf');
         Route::get('payment', 'OrderController@paymentForm')->name('customer.paymentForm');
         Route::post('payment', 'OrderController@storePayment')->name('customer.savePayment');
         Route::get('setting', 'FrontController@customerSettingForm')->name('customer.settingForm');

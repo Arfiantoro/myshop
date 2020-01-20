@@ -100,7 +100,7 @@ class CartController extends Controller
         DB::beginTransaction();
         try {
             $customer = Customer::where('email', $request->email)->first();
-            if (!auth()->check() && $customer) {
+            if (!auth()->guard('customer')->check() && $customer) {
                 return redirect()->back()->with(['error' => 'Silahkan Login Terlebih Dahulu']);
             }
             $carts = $this->getCarts();
@@ -108,17 +108,21 @@ class CartController extends Controller
                 return $q['qty'] * $q['product_price'];
             });
             
-            $password = Str::random(8);
-            $customer = Customer::create([
-                'name' => $request->customer_name,
-                'email' => $request->email,
-                'password' => $password,
-                'phone_number' => $request->customer_phone,
-                'address' => $request->customer_address,
-                'district_id' => $request->district_id,
-                'activate_token' => Str::random(30),
-                'status' => false
-            ]);
+            //UNTUK MENGHINDARI DUPLICATE CUSTOMER, MASUKKAN QUERY UNTUK MENAMBAHKAN CUSTOMER BARU
+            //SEBENARNYA VALIDASINYA BISA DIMASUKKAN PADA METHOD VALIDATION DIATAS, TAPI TIDAK MENGAPA UNTUK MENCOBA CARA BERBEDA
+            if (!auth()->guard('customer')->check()) {
+                $password = Str::random(8);
+                $customer = Customer::create([
+                    'name' => $request->customer_name,
+                    'email' => $request->email,
+                    'password' => $password,
+                    'phone_number' => $request->customer_phone,
+                    'address' => $request->customer_address,
+                    'district_id' => $request->district_id,
+                    'activate_token' => Str::random(30),
+                    'status' => false
+                ]);
+            }
             
             $order = Order::create([
                 'invoice' => Str::random(4) . '-' . time(),
@@ -139,11 +143,18 @@ class CartController extends Controller
                     'weight' => $product->weight
                 ]);
             }
+            
             DB::commit();
+            
             $carts = [];
             $cookie = cookie('dw-carts', json_encode($carts), 2880);
-            Mail::to($request->email)->send(new CustomerRegisterMail($customer, $password));
+            
+            //EMAILNYA JUGA UNTUK CUSTOMER BARU
+            if (!auth()->guard('customer')->check()) {
+                Mail::to($request->email)->send(new CustomerRegisterMail($customer, $password));
+            }
             return redirect(route('front.finish_checkout', $order->invoice))->cookie($cookie);
+            
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->back()->with(['error' => $e->getMessage()]);
