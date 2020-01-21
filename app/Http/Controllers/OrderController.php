@@ -13,7 +13,8 @@ class OrderController extends Controller {
         //QUERY UNTUK MENGAMBIL SEMUA PESANAN DAN LOAD DATA YANG BERELASI MENGGUNAKAN EAGER LOADING
         //DAN URUTANKAN BERDASARKAN CREATED_AT
         $orders = Order::with(['customer.district.city.province'])
-                ->orderBy('created_at', 'DESC');
+        ->withCount('return')
+        ->orderBy('created_at', 'DESC');
 
         //JIKA Q UNTUK PENCARIAN TIDAK KOSONG
         if (request()->q != '') {
@@ -34,23 +35,20 @@ class OrderController extends Controller {
         return view('orders.index', compact('orders')); //LOAD VIEW INDEX DAN PASSING DATA TERSEBUT
     }
 
-    public function destroy($id)
-    {
+    public function destroy($id) {
         $order = Order::find($id);
         $order->details()->delete();
         $order->payment()->delete();
         $order->delete();
         return redirect(route('orders.index'));
     }
-    
-    public function view($invoice)
-    {
+
+    public function view($invoice) {
         $order = Order::with(['customer.district.city.province', 'payment', 'details.product'])->where('invoice', $invoice)->first();
         return view('orders.view', compact('order'));
     }
-    
-    public function acceptPayment($invoice)
-    {
+
+    public function acceptPayment($invoice) {
         //MENGAMBIL DATA CUSTOMER BERDASARKAN INVOICE
         $order = Order::with(['payment'])->where('invoice', $invoice)->first();
         //UBAH STATUS DI TABLE PAYMENTS MELALUI ORDER YANG TERKAIT
@@ -60,9 +58,8 @@ class OrderController extends Controller {
         //REDIRECT KE HALAMAN YANG SAMA.
         return redirect(route('orders.view', $order->invoice));
     }
-    
-    public function shippingOrder(Request $request)
-    {
+
+    public function shippingOrder(Request $request) {
         //MENGAMBIL DATA ORDER BERDASARKAN ID
         $order = Order::with(['customer'])->find($request->order_id);
         //UPDATE DATA ORDER DENGAN MEMASUKKAN NOMOR RESI DAN MENGUBAH STATUS MENJADI DIKIRIM
@@ -70,6 +67,21 @@ class OrderController extends Controller {
         //KIRIM EMAIL KE PELANGGAN TERKAIT
         Mail::to($order->customer->email)->send(new OrderMail($order));
         //REDIRECT KEMBALI
+        return redirect()->back();
+    }
+    
+    public function return($invoice)
+    {
+        $order = Order::with(['return', 'customer'])->where('invoice', $invoice)->first();
+        return view('orders.return', compact('order'));
+    }
+    
+    public function approveReturn(Request $request)
+    {
+        $this->validate($request, ['status' => 'required']); //validasi status
+        $order = Order::find($request->order_id); //query berdasarkan order_id
+        $order->return()->update(['status' => $request->status]); //update status yang ada di table order_returns melalui order
+        $order->update(['status' => 4]); //update status yang ada di table orders
         return redirect()->back();
     }
 }

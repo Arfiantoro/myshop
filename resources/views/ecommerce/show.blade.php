@@ -41,23 +41,30 @@
                     <h2>Rp {{ number_format($product->price) }}</h2>
                     <ul class="list">
                         <li>
-                            <a class="active" href="#">
-                                <span>Kategori</span> : {{ $product->category->name }}</a>
+                            <a class="active" href="#"> <span>Kategori</span> : {{ $product->category->name }}</a>
                         </li>
                     </ul>
-                    <p></p>
-                    
+                    <p>
+                        @if (auth()->guard('customer')->check())
+                        <label>Afiliasi Link</label>
+                        <input type="text" 
+                          value="{{ url('/product/ref/' . auth()->guard('customer')->user()->id . '/' . $product->id) }}" 
+                          readonly class="form-control">
+                        @endif
+                    </p>
                     <form action="{{ route('front.cart') }}" method="POST">
-					@csrf
+                        @csrf
                         <div class="product_count">
                             <label for="qty">Quantity:</label>
                             <input type="text" name="qty" id="sst" maxlength="12" value="1" title="Quantity:" class="input-text qty">
 
                             <input type="hidden" name="product_id" value="{{ $product->id }}" class="form-control">
 
-                            <button onclick="var result = document.getElementById('sst'); var sst = result.value; if (!isNaN(sst))
-                                                                        result.value++;
-                                                                    return false;"
+                            <button onclick="var result = document.getElementById('sst');
+                                    var sst = result.value;
+                                    if (!isNaN(sst))
+                                        result.value++;
+                                    return false;"
                                     class="increase items-count" type="button">
                                 <i class="lnr lnr-chevron-up"></i>
                             </button>

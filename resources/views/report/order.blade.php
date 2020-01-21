@@ -1,14 +1,14 @@
 @extends('layouts.admin')
 
 @section('title')
-<title>Daftar Pesanan</title>
+<title>Laporan Order</title>
 @endsection
 
 @section('content')
 <main class="main">
     <ol class="breadcrumb">
         <li class="breadcrumb-item">Home</li>
-        <li class="breadcrumb-item active">Orders</li>
+        <li class="breadcrumb-item active">Laporan Order</li>
     </ol>
     <div class="container-fluid">
         <div class="animated fadeIn">
@@ -17,7 +17,7 @@
                     <div class="card">
                         <div class="card-header">
                             <h4 class="card-title">
-                                Daftar Pesanan
+                                Laporan Order
                             </h4>
                         </div>
                         <div class="card-body">
@@ -29,27 +29,18 @@
                             <div class="alert alert-danger">{{ session('error') }}</div>
                             @endif
 
-                            <!-- FORM UNTUK FILTER DAN PENCARIAN -->
-                            <form action="{{ route('orders.index') }}" method="get">
-                                <div class="input-group mb-3 col-md-6 float-right">
-                                    <select name="status" class="form-control mr-3">
-                                        <option value="">Pilih Status</option>
-                                        <option value="0">Baru</option>
-                                        <option value="1">Confirm</option>
-                                        <option value="2">Proses</option>
-                                        <option value="3">Dikirim</option>
-                                        <option value="4">Selesai</option>
-                                    </select>
-                                    <input type="text" name="q" class="form-control" placeholder="Cari..." value="{{ request()->q }}">
+                            <!-- FORM UNTUK FILTER BERDASARKAN DATE RANGE -->
+                            <form action="{{ route('report.order') }}" method="get">
+                                <div class="input-group mb-3 col-md-4 float-right">
+                                    <input type="text" id="created_at" name="date" class="form-control">
                                     <div class="input-group-append">
-                                        <button class="btn btn-secondary" type="submit">Cari</button>
+                                        <button class="btn btn-secondary" type="submit">Filter</button>
                                     </div>
+                                    <a target="_blank" class="btn btn-primary ml-2" id="exportpdf">Export PDF</a>
                                 </div>
                             </form>
-                            <!-- FORM UNTUK FILTER DAN PENCARIAN -->
-
-                            <!-- TABLE UNTUK MENAMPILKAN DATA ORDER -->
                             <div class="table-responsive">
+                                <!-- TAMPILKAN DATA YANG BERHASIL DIFILTER -->
                                 <table class="table table-hover table-bordered">
                                     <thead>
                                         <tr>
@@ -57,8 +48,6 @@
                                             <th>Pelanggan</th>
                                             <th>Subtotal</th>
                                             <th>Tanggal</th>
-                                            <th>Status</th>
-                                            <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -72,20 +61,6 @@
                                             </td>
                                             <td>Rp {{ number_format($row->subtotal) }}</td>
                                             <td>{{ $row->created_at->format('d-m-Y') }}</td>
-                                            <td>
-                                                {!! $row->status_label !!} <br>
-                                                @if ($row->return_count > 0)
-                                                <a href="{{ route('orders.return', $row->invoice) }}">Permintaan Return</a>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <form action="{{ route('orders.destroy', $row->id) }}" method="post">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <a href="{{ route('orders.view', $row->invoice) }}" class="btn btn-warning btn-sm">Lihat</a>
-                                                    <button class="btn btn-danger btn-sm">Hapus</button>
-                                                </form>
-                                            </td>
                                         </tr>
                                         @empty
                                         <tr>
@@ -95,7 +70,6 @@
                                     </tbody>
                                 </table>
                             </div>
-                            {!! $orders->links() !!}
                         </div>
                     </div>
                 </div>
@@ -104,3 +78,29 @@
     </div>
 </main>
 @endsection
+
+<!-- KITA GUNAKAN LIBRARY DATERANGEPICKER -->
+@section('js')
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<script>
+//KETIKA PERTAMA KALI DI-LOAD MAKA TANGGAL NYA DI-SET TANGGAL SAA PERTAMA DAN TERAKHIR DARI BULAN SAAT INI
+$(document).ready(function () {
+    let start = moment().startOf('month')
+    let end = moment().endOf('month')
+
+    //KEMUDIAN TOMBOL EXPORT PDF DI-SET URLNYA BERDASARKAN TGL TERSEBUT
+    $('#exportpdf').attr('href', '/administrator/reports/order/pdf/' + start.format('YYYY-MM-DD') + '+' + end.format('YYYY-MM-DD'))
+
+    //INISIASI DATERANGEPICKER
+    $('#created_at').daterangepicker({
+        startDate: start,
+        endDate: end
+    }, function (first, last) {
+        //JIKA USER MENGUBAH VALUE, MANIPULASI LINK DARI EXPORT PDF
+        $('#exportpdf').attr('href', '/administrator/reports/order/pdf/' + first.format('YYYY-MM-DD') + '+' + last.format('YYYY-MM-DD'))
+    })
+})
+</script>
+@endsection()
